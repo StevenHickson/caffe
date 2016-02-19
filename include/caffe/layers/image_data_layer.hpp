@@ -1,5 +1,5 @@
-#ifndef CAFFE_LABEL_DATA_LAYER_HPP_
-#define CAFFE_LABEL_DATA_LAYER_HPP_
+#ifndef CAFFE_IMAGE_DATA_LAYER_HPP_
+#define CAFFE_IMAGE_DATA_LAYER_HPP_
 
 #include <string>
 #include <utility>
@@ -44,4 +44,4 @@ class ImageDataLayer : public BasePrefetchingDataLayer<Dtype> {
 
 }  // namespace caffe
 
-#endif  // CAFFE_LABEL_DATA_LAYER_HPP_
+#endif  // CAFFE_IMAGE_DATA_LAYER_HPP_
