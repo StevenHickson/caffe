@@ -71,21 +71,29 @@ void WriteProtoToBinaryFile(const Message& proto, const char* filename) {
 
 #ifdef USE_OPENCV
 cv::Mat ReadImageToCVMat(const string& filename,
-    const int height, const int width, const bool is_color) {
+    const int height, const int width, const bool is_color, const bool interpolate) {
   cv::Mat cv_img;
-  int cv_read_flag = (is_color ? CV_LOAD_IMAGE_COLOR :
-    CV_LOAD_IMAGE_GRAYSCALE);
+  int cv_read_flag = (is_color ? CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_COLOR :
+    CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_GRAYSCALE);
   cv::Mat cv_img_origin = cv::imread(filename, cv_read_flag);
   if (!cv_img_origin.data) {
     LOG(ERROR) << "Could not open or find file " << filename;
     return cv_img_origin;
   }
   if (height > 0 && width > 0) {
-    cv::resize(cv_img_origin, cv_img, cv::Size(width, height));
+    if (interpolate)
+      cv::resize(cv_img_origin, cv_img, cv::Size(width, height));
+    else
+      cv::resize(cv_img_origin, cv_img, cv::Size(width, height), 0, 0, cv::INTER_NEAREST);
   } else {
     cv_img = cv_img_origin;
   }
   return cv_img;
+}
+
+cv::Mat ReadImageToCVMat(const string& filename,
+    const int height, const int width, const bool is_color) {
+  return ReadImageToCVMat(filename, height, width, is_color, true);
 }
 
 cv::Mat ReadImageToCVMat(const string& filename,
