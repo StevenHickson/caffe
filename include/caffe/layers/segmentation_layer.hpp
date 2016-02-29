@@ -43,12 +43,22 @@ namespace caffe {
       const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom) {
     }*/
 
-    int height_;
-    int width_;
+    int Segmentation(std::vector<cv::Mat> &in, cv::Mat &out, const int segStartNumber);
+
+    //Generic segmentation variables
     int num_segments_;
-    //int data_height_;
-    //int data_width_;
-    int seg_parameter_;
+    int bbox_extension_;
+    int method_;
+
+    //Method = 0 = FH
+    float smoothing_;
+    float k_;
+    int min_size_;
+
+    //Method = 1 = SLIC
+    int s_;
+    int m_;
+    int iter_;
   };
 
 }  // namespace caffe

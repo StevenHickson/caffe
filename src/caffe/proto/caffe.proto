@@ -1138,9 +1138,14 @@ message WindowDataParameter {
 }
 
 message SegmentationParameter {
-  optional uint32 data_height = 1;
-  optional uint32 data_width = 2;
-  optional uint32 seg_parameter = 3 [default = 1];
+  optional uint32 bbox_extension = 1 [default = 3];
+  optional uint32 method = 2 [default = 0];
+  optional float smoothing = 3 [default = 0.5];
+  optional float k = 4 [default = 200];
+  optional uint32 min_size = 5 [default = 200];
+  optional uint32 s = 6 [default = 10];
+  optional uint32 m = 7 [default = 20];
+  optional uint32 iter = 8 [default = 3];
 }
 
 // Message that stores parameters used by ROIPoolingLayer

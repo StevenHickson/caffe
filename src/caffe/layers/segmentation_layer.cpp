@@ -47,7 +47,7 @@ public:
 	SLIC(int width, int height);
 	void ComputeSuperPixels(const cv::Mat &image, cv::Point &topLeft, int S, int M, int iter);
 	void DrawResults(cv::Mat &display);
-	void ApplyMask(const cv::Mat &mask, cv::Mat &display);
+	void CreateMask(cv::Mat &out);
 	int Width(){ return m_width; }
 	int Height(){ return m_height; }
 
@@ -225,6 +225,7 @@ void SLIC::UpdateCenters(){
 void SLIC::DrawResults(cv::Mat &display){
 	//set display = m_input
 	display = m_input.clone();
+	display.convertTo(display, CV_8UC3);
 
 	int safeHeight = m_height - 1, safeWidth = m_width - 1;
 	cv::Mat_<cv::Vec3b>::iterator pD = display.begin<cv::Vec3b>();
@@ -264,60 +265,15 @@ void SLIC::DrawResults(cv::Mat &display){
 	}
 }
 
-void SLIC::ApplyMask(const cv::Mat &mask, cv::Mat &display) {
-	//I need to go through the results image and figure out which clusters are fully/mostly contained by the mask and then output the display
 
-	int *good = (int *)calloc(m_centers.size(), sizeof(int));
-	int *bad = (int *)calloc(m_centers.size(), sizeof(int));
-	bool *accepted = (bool *)calloc(m_centers.size(), sizeof(bool));
-	//iterate through the image and grab the good and bad values
-	cv::Mat_<unsigned char>::const_iterator pM = mask.begin<unsigned char>();
-	cv::Mat_<int>::const_iterator pR = m_results.begin<int>();
-	while (pM != mask.end<unsigned char>()) {
-		if (*pM != 255)
-			good[*pR]++;
-		else
-			bad[*pR]++;
-		++pR; ++pM;
-	}
-
-	float minusThresh = 1.0f - m_spThresh;
-	//lets see what variables we want
-	int *pG = good, *pB = bad;
-	bool *pA = accepted;
-	for (int i = 0; i < m_centers.size(); i++) {
-		if (*pG != 0 && minusThresh * float(*pG) >= m_spThresh * float(*pB))
-			*pA = true;
-		else
-			*pA = false;
-		++pG; ++pA; ++pB;
-	}
-
-	//now lets display only those superpixels
-	//method displaying superpixels using mask
-	/*display = cv::Mat::zeros(m_input.rows, m_input.cols, CV_8UC3);
-	cv::Mat_<cv::Vec3b>::iterator pD = display.begin<cv::Vec3b>();
-	cv::Mat_<cv::Vec3b>::iterator pI = m_input.begin<cv::Vec3b>();
-	pR = m_results.begin<int>();
-	while (pD != display.end<cv::Vec3b>()) {
-	if (accepted[*pR])
-	*pD = *pI;
-	++pR; ++pD; ++pI;
-	}*/
-
-	//method displaying mask using superpixels
-	display = cv::Mat::zeros(m_input.rows, m_input.cols, CV_8UC3);
-	cv::Mat_<cv::Vec3b>::iterator pD = display.begin<cv::Vec3b>();
-	cv::Mat_<cv::Vec3b>::iterator pI = m_input.begin<cv::Vec3b>();
-	pR = m_results.begin<int>();
-	while (pD != display.end<cv::Vec3b>()) {
-		if (*pR != 255 && accepted[*pR])
-			*pD = *pI;
-		++pR; ++pD; ++pI;
-	}
+void SLIC::CreateMask(cv::Mat &out){
+	out = m_results.clone();
+	double min, max;
+	cv::minMaxLoc(out, &min, &max);
+	printf("Min: %d, max: %d\n", (int)min, (int)max);
 }
 
-void SLIC::ComputeSuperPixels(const cv::Mat &image, cv::Point &topLeft, int S, int M, int iter){
+void SLIC::ComputeSuperPixels(const cv::Mat &image, cv::Point &topLeft, int S, int M, int iter) {
 	m_topLeft = topLeft;
 	//m_S = int(float(m_width)*float(S) * 0.01f);
 	//m_M = int(float(m_width)*float(M) * 0.01f);
@@ -710,19 +666,12 @@ int FHGraphSegment(
 /* END FH */
 /* -----------------------------------------------------------------------------------------*/
 
-int segmentation(std::vector<cv::Mat> &in, cv::Mat &out, const int s, const int m, const int iter, const int segStartNumber = 0) {
-	/*SLIC slic(in.cols, in.rows);
-	slic.ComputeSuperPixels(in, cv::Point(0, 0), s, m, iter);
-	slic.DrawResults(out);*/
-	cv::Mat tmp;
-	int numSegs = FHGraphSegment(in, 0.5f, 200, 200, out, tmp, segStartNumber);
-	return numSegs;
-}
-
 int MostOccuringValue(const cv::Mat &in, const cv::Rect &bbox) {
 	cv::Rect fixedBox = bbox;
 	fixedBox.width -= fixedBox.x;
 	fixedBox.height -= fixedBox.y;
+	fixedBox.width = std::min(std::max(fixedBox.width, 1), fixedBox.width - 1);
+	fixedBox.height = std::min(std::max(fixedBox.height, 1), fixedBox.height - 1);
 
 	cv::Mat region = in(fixedBox);
 	cv::Mat_<float>::const_iterator pR = region.begin<float>();
@@ -732,7 +681,7 @@ int MostOccuringValue(const cv::Mat &in, const cv::Rect &bbox) {
 		counts[(int)*pR]++;
 		++pR;
 	}
-	return std::distance(counts.begin(),std::max_element(counts.begin(), counts.end()));
+	return std::distance(counts.begin(), std::max_element(counts.begin(), counts.end()));
 }
 
 namespace caffe {
@@ -760,7 +709,7 @@ namespace caffe {
 	}
 
 	template <typename Dtype>
-	void ExtractSegBoxes(const std::vector<cv::Mat> &in, const cv::Mat &seg, cv::Mat &label, int numSegs, const int segStartNumber, const int imgNum, const int bb_extension, const int segWidth, const int segHeight, const vector<Blob<Dtype>*>& bottom, const vector<Blob<Dtype>*>& top) {
+	void ExtractSegBoxes(const std::vector<cv::Mat> &in, const cv::Mat &seg, cv::Mat &label, int numSegs, const int segStartNumber, const int imgNum, const int bb_extension, const vector<Blob<Dtype>*>& bottom, const vector<Blob<Dtype>*>& top) {
 		//We need to extract a bounding box of each segment
 		const Dtype* bottom_data = bottom[0]->cpu_data();
 		//lets extract the bounding box first.
@@ -795,16 +744,16 @@ namespace caffe {
 		//std::vector<int> newShape = { numSegs + segStartNumber, 3, segHeight, segWidth };
 		//top[0]->Reshape(newShape);
 		//printf("Num Segs: %d\n", numSegs);
-		//std::vector<int> top_shape = { numSegs, 4, 1, 1 };
-    int totalSegs = numSegs + segStartNumber;
+		int totalSegs = numSegs + segStartNumber;
+		//std::vector<int> top_shape = { totalSegs, 5, 1, 1 };
 		top[0]->Reshape(totalSegs, 5, 1, 1);
-		//std::vector<int> top2_shape = { numSegs };
+		//std::vector<int> top2_shape = { totalSegs };
 		top[1]->Reshape(totalSegs, 1, 1, 1);
 		Dtype* seg_data = top[0]->mutable_cpu_data();
 		Dtype* label_data = top[1]->mutable_cpu_data();
 		//float *segLabels = (float*)malloc(numSegs * sizeof(float));
 		//float *pSL = segLabels;
-		int currSeg = segStartNumber, size = segWidth * segHeight;
+		int currSeg = segStartNumber;
 		for (int i = 0; i < numSegs; i++, pB++, currSeg++) {
 			//first lets scale our box appropriately and extend it
 			pB->width += bb_extension;
@@ -850,15 +799,52 @@ namespace caffe {
 	}
 
 	template <typename Dtype>
+	int SegmentationLayer<Dtype>::Segmentation(std::vector<cv::Mat> &in, cv::Mat &out, const int segStartNumber = 0) {
+		int numSegs = 0;
+		if (method_ == 0) {
+			cv::Mat tmp;
+			numSegs = FHGraphSegment(in, smoothing_, k_, min_size_, out, tmp, segStartNumber);
+		}
+		else {
+			//cv::Mat merged;
+			//cv::merge(in, merged);
+			//SLIC slic(merged.cols, merged.rows);
+			//slic.ComputeSuperPixels(merged, cv::Point(0, 0), s_, m_, iter_);
+			//cv::Mat tmp;
+			//slic.DrawResults(tmp);
+			//cv::imshow("SLIC", tmp);
+			//cv::waitKey(0);
+			//slic.CreateMask(out);
+			CHECK_EQ(method_, 1) << "Error, SLIC not fully implemented yet.";
+		}
+		return numSegs;
+	}
+
+	template <typename Dtype>
 	void SegmentationLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
 		const vector<Blob<Dtype>*>& top) {
 		SegmentationParameter seg_param = this->layer_param_.seg_param();
-		height_ = seg_param.data_height();
-		width_ = seg_param.data_width();
-		num_segments_ = 300;
+		num_segments_ = 100;
 		//data_height_ = seg_param.data_height();
 		//data_width_ = seg_param.data_width();
-		seg_parameter_ = seg_param.seg_parameter();
+		bbox_extension_ = seg_param.bbox_extension();
+		method_ = seg_param.method();
+		smoothing_ = seg_param.smoothing();
+		k_ = seg_param.k();
+		min_size_ = seg_param.min_size();
+		s_ = seg_param.s();
+		m_ = seg_param.m();
+		iter_ = seg_param.iter();
+
+		CHECK_LT(method_, 2) << "Method must be 0 (FH - default) or 1 (SLIC)";
+		CHECK_GT(method_, -1) << "Method must be 0 (FH - default) or 1 (SLIC)";
+		CHECK_GE(bbox_extension_, 0) << "Bounding box extension must be 0 or greater";
+		CHECK_GE(smoothing_, 0) << "Smoothing must be 0 or greater";
+		CHECK_GE(k_, 0) << "k must be greater than 0";
+		CHECK_GE(min_size_, 0) << "min_size must be greater than 0";
+		CHECK_GE(s_, 0) << "s must be greater than 0";
+		CHECK_GE(m_, 0) << "m must be greater than 0";
+		CHECK_GE(iter_, 0) << "iter must be greater than 0";
 	}
 
 	template <typename Dtype>
@@ -871,8 +857,7 @@ namespace caffe {
 
 		//vector<int> top_shape = bottom[0]->shape();
 		//Guess the number of segs here here
-		//top_shape[0] = top_shape[0] * 60;
-		//std::vector<int> top_shape = { num_segments_, 4, 1, 1 };
+		//std::vector<int> top_shape = { num_segments_, 5, 1, 1 };
 		top[0]->Reshape(num_segments_, 5, 1, 1);
 		//std::vector<int> top2_shape = { num_segments_ };
 		top[1]->Reshape(num_segments_, 1, 1, 1);
@@ -932,12 +917,11 @@ namespace caffe {
 		}*/
 		vector<int> shape = bottom[0]->shape();
 		int num = shape[0] * shape[1] * shape[2] * shape[3];
-		//std::vector<cv::Mat> channels = { cv::Mat(), cv::Mat(), cv::Mat() };
 		std::vector<cv::Mat> channels;
     channels.resize(3);
 		cv::Mat img;
 		int segId = 0;
-    this->num_segments_ = 0;
+		this->num_segments_ = 0;
 		for (int i = 0; i < shape[0]; i++) {
 			channels[0] = cv::Mat(shape[2], shape[3], CV_32FC1, (void*)(bottom[0]->cpu_data() + bottom[0]->offset(i, 0, 0, 0)));
 			channels[1] = cv::Mat(shape[2], shape[3], CV_32FC1, (void*)(bottom[0]->cpu_data() + bottom[0]->offset(i, 1, 0, 0)));
@@ -947,9 +931,9 @@ namespace caffe {
 			cv::Mat label = cv::Mat(shape[2], shape[3], CV_32FC1, (void*)(bottom[1]->cpu_data() + bottom[1]->offset(i, 0, 0, 0)));
 			//img.convertTo(img, CV_8UC3);
 			cv::Mat seg;
-			int numSegs = segmentation(channels, seg, 10, 20, 3, segId);
-      this->num_segments_ += numSegs;
-			ExtractSegBoxes<Dtype>(channels, seg, label, numSegs, segId, i, 3, 227, 227, bottom, top);
+			int numSegs = this->Segmentation(channels, seg, segId);
+			this->num_segments_ += numSegs;
+			ExtractSegBoxes<Dtype>(channels, seg, label, numSegs, segId, i, bbox_extension_, bottom, top);
 			segId += numSegs;
 		}
 		//cv::Mat tmp = DecodeDatumToCVMat(*(const caffe::Datum*)((bottom[0]->cpu_data())), true);
