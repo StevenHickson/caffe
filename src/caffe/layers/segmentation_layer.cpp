@@ -38,9 +38,12 @@
 
 /* BEGIN SLIC */
 /* -----------------------------------------------------------------------------------------*/
-struct SLIC_Center{
+class SLIC_Center{
+public:
 	float x, y, L, A, B;
 	bool alive;
+
+  SLIC_Center(float x_, float y_, float L_, float A_, float B_, bool alive_) : x(x_), y(y_), L(L_), A(A_), B(B_), alive(alive_) { };
 };
 
 class SLIC{
@@ -99,7 +102,8 @@ void SLIC::Initialize(){
 	for (int i = m_S / 2; i < m_height; i += m_S){
 		for (int j = m_S / 2; j < m_width; j += m_S){
 			cv::Vec3b lab = m_lab.at<cv::Vec3b>(i, j);
-			m_centers.push_back(SLIC_Center{ j, i, lab[0], lab[1], lab[2], true });
+			//m_centers.push_back(SLIC_Center{ j, i, lab[0], lab[1], lab[2], true });
+			m_centers.push_back(SLIC_Center( j, i, lab[0], lab[1], lab[2], true ));
 
 			for (int k = i - m_S / 2; k < i + m_S / 2 && k < m_height; k++){
 				if (k < 0){
