@@ -578,7 +578,7 @@ void iSegment_graph(int num_vertices, int num_edges, Edge*& edges, float c, Univ
 	}
 
 	// free up
-	delete threshold;
+	delete[] threshold;
 }
 
 inline void iJoin_graph(Edge *&edges, int num_edges, int min_size, Universe *u) {
