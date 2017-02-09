@@ -221,18 +221,18 @@ int main(int argc, char** argv) {
 						n_pixels = count*dim + (iter + 1);
 
 						// for each pixel, update mean and covariance for all channels
-						for (int chan = 0; chan < FLAGS_channels; chan++) {
+						for (int chan = 0; chan < channels; chan++) {
 							mean.ptr<double>(0)[chan] +=
-								(((uint8_t)(blob_top_data_->cpu_data() + blob_top_data_->offset(b, chan, r, c)))
+								(static_cast<double>(*(blob_top_data_->cpu_data() + blob_top_data_->offset(b, chan, r, c)))
 									- mean.ptr<double>(0)[chan]) / n_pixels;
 						}
 						for (int c_i = 0; c_i < channels; c_i++) {
 							for (int c_j = 0; c_j <= c_i; c_j++) {
 								covar.ptr<double>(c_i)[c_j] =
 									(covar_prev.ptr<double>(c_i)[c_j] * (n_pixels - 1)
-										+ (((uint8_t)(blob_top_data_->cpu_data() + blob_top_data_->offset(b, c_i, r, c)))
+										+ (static_cast<double>(*(blob_top_data_->cpu_data() + blob_top_data_->offset(b, c_i, r, c)))
 											- mean.ptr<double>(0)[c_i])
-										* (((uint8_t)(blob_top_data_->cpu_data() + blob_top_data_->offset(b, c_j, r, c)))
+										*(static_cast<double>(*(blob_top_data_->cpu_data() + blob_top_data_->offset(b, c_j, r, c)))
 											- mean_prev.ptr<double>(0)[c_j])) / n_pixels;
 							}
 						}
@@ -277,7 +277,7 @@ int main(int argc, char** argv) {
 			LOG(INFO) << "eigen_vector_component: " << eigenvectors.ptr<double>(i)[j];
 		}
 	}
-
+	std::getchar();
 #else
 	LOG(FATAL) << "This tool requires OpenCV; compile with USE_OPENCV.";
 #endif  // USE_OPENCV
