@@ -13,10 +13,10 @@
 
 #ifdef USE_OPENCV
 #include <opencv2/core/core.hpp>
-#include <opencv2/core/utility.hpp>
-#include "opencv2/imgproc.hpp"
-#include "opencv2/imgcodecs.hpp"
-#include "opencv2/highgui.hpp"
+//#include <opencv2/core/utility.hpp>
+#include "opencv2/imgproc/imgproc.hpp"
+//#include "opencv2/imgcodecs.hpp"
+//#include "opencv2/highgui.hpp"
 #endif
 
 //void segmentation(cv::Mat &in, cv::Mat &out) {
