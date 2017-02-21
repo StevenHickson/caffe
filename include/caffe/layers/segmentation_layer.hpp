@@ -35,17 +35,19 @@ namespace caffe {
   protected:
     virtual void Forward_cpu(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
-    /*virtual void Forward_gpu(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top);*/
     virtual void Backward_cpu(const vector<Blob<Dtype>*>& top,
       const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom) {
 
     }
-    /*virtual void Backward_gpu(const vector<Blob<Dtype>*>& top,
-      const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom) {
-    }*/
 
-    int Segmentation(std::vector<cv::Mat> &in, cv::Mat &out, const int segStartNumber);
+#ifdef CPU_ONLY
+    virtual void Forward_gpu(const vector<Blob<Dtype>*>& bottom,
+      const vector<Blob<Dtype>*>& top);
+    virtual void Backward_gpu(const vector<Blob<Dtype>*>& top,
+      const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom);
+#endif
+
+    int Segmentation(std::vector<cv::Mat> &in, cv::Mat &out, const int segStartNumber = 0);
 
     //Generic segmentation variables
     int num_segments_;
@@ -54,7 +56,7 @@ namespace caffe {
 
     //Method = 0 = FH
     float smoothing_;
-    float k_;
+    float k_, min_k_, max_k_;
     int min_size_;
 
     //Method = 1 = SLIC

@@ -12,11 +12,12 @@
 #include "caffe/util/io.hpp"
 
 #ifdef USE_OPENCV
-#include <opencv2/core/core.hpp>
+//#include <opencv2/core/core.hpp>
 //#include <opencv2/core/utility.hpp>
-#include "opencv2/imgproc/imgproc.hpp"
+//#include "opencv2/imgproc.hpp"
 //#include "opencv2/imgcodecs.hpp"
 //#include "opencv2/highgui.hpp"
+#include "opencv2/opencv.hpp"
 #endif
 
 //void segmentation(cv::Mat &in, cv::Mat &out) {
@@ -37,9 +38,12 @@
 
 /* BEGIN SLIC */
 /* -----------------------------------------------------------------------------------------*/
-struct SLIC_Center{
+class SLIC_Center{
+public:
 	float x, y, L, A, B;
 	bool alive;
+
+  SLIC_Center(float x_, float y_, float L_, float A_, float B_, bool alive_) : x(x_), y(y_), L(L_), A(A_), B(B_), alive(alive_) { };
 };
 
 class SLIC{
@@ -98,7 +102,8 @@ void SLIC::Initialize(){
 	for (int i = m_S / 2; i < m_height; i += m_S){
 		for (int j = m_S / 2; j < m_width; j += m_S){
 			cv::Vec3b lab = m_lab.at<cv::Vec3b>(i, j);
-			m_centers.push_back(SLIC_Center{ j, i, lab[0], lab[1], lab[2], true });
+			//m_centers.push_back(SLIC_Center{ j, i, lab[0], lab[1], lab[2], true });
+			m_centers.push_back(SLIC_Center( j, i, lab[0], lab[1], lab[2], true ));
 
 			for (int k = i - m_S / 2; k < i + m_S / 2 && k < m_height; k++){
 				if (k < 0){
@@ -573,7 +578,7 @@ void iSegment_graph(int num_vertices, int num_edges, Edge*& edges, float c, Univ
 	}
 
 	// free up
-	delete threshold;
+	delete[] threshold;
 }
 
 inline void iJoin_graph(Edge *&edges, int num_edges, int min_size, Universe *u) {
@@ -717,8 +722,8 @@ namespace caffe {
 		boxes.resize(numSegs);
 		std::vector<cv::Rect>::iterator pB = boxes.begin();
 		while (pB != boxes.end()) {
-			pB->x = seg.rows;
-			pB->y = seg.cols;
+			pB->x = seg.cols;
+			pB->y = seg.rows;
 			pB->width = 0;
 			pB->height = 0;
 			++pB;
@@ -803,10 +808,14 @@ namespace caffe {
 	}
 
 	template <typename Dtype>
-	int SegmentationLayer<Dtype>::Segmentation(std::vector<cv::Mat> &in, cv::Mat &out, const int segStartNumber = 0) {
+	int SegmentationLayer<Dtype>::Segmentation(std::vector<cv::Mat> &in, cv::Mat &out, const int segStartNumber) {
 		int numSegs = 0;
 		if (method_ == 0) {
 			cv::Mat tmp;
+      if (max_k_ != 0) {
+        int diff = int(max_k_ - min_k_);
+        k_ = rand() % diff + min_k_;
+      }
 			numSegs = FHGraphSegment(in, smoothing_, k_, min_size_, out, tmp, segStartNumber);
 		}
 		else {
@@ -835,10 +844,14 @@ namespace caffe {
 		method_ = seg_param.method();
 		smoothing_ = seg_param.smoothing();
 		k_ = seg_param.k();
+		min_k_ = seg_param.min_k();
+		max_k_ = seg_param.max_k();
 		min_size_ = seg_param.min_size();
 		s_ = seg_param.s();
 		m_ = seg_param.m();
 		iter_ = seg_param.iter();
+
+    srand((unsigned int)time(NULL));
 
 		CHECK_LT(method_, 2) << "Method must be 0 (FH - default) or 1 (SLIC)";
 		CHECK_GT(method_, -1) << "Method must be 0 (FH - default) or 1 (SLIC)";
