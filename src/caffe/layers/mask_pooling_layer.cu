@@ -5,7 +5,7 @@
 // Licensed under The MIT License [see LICENSE for details]
 // --------------------------------------------------------
 
-#include "caffe/fast_rcnn_layers.hpp"
+#include "caffe/layers/mask_pooling_layer.hpp"
 #include <iostream>
 namespace caffe {
 

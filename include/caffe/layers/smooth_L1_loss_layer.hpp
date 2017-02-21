@@ -19,8 +19,6 @@
 namespace caffe {
 
 template <typename Dtype>
-
-    template <typename Dtype>
 class SmoothL1LossLayer : public LossLayer<Dtype> {
  public:
   explicit SmoothL1LossLayer(const LayerParameter& param)

@@ -308,7 +308,7 @@ message ParamSpec {
 // NOTE
 // Update the next available ID when you add a new LayerParameter field.
 //
-// LayerParameter next available layer-specific ID: 149 (last added: segmentation_param)
+// LayerParameter next available layer-specific ID: 152 (last added: mask_resize_param)
 message LayerParameter {
   optional string name = 1; // the layer name
   optional string type = 2; // the layer type
@@ -386,6 +386,7 @@ message LayerParameter {
   optional LabelDataParameter label_data_param = 149;
   optional LogParameter log_param = 134;
   optional LRNParameter lrn_param = 118;
+  optional MaskResizeParameter mask_resize_param = 152;
   optional MemoryDataParameter memory_data_param = 119;
   optional MVNParameter mvn_param = 120;
   optional ParameterParameter parameter_param = 145;
@@ -400,7 +401,9 @@ message LayerParameter {
   optional ScaleParameter scale_param = 142;
   optional SegmentationParameter seg_param = 148;
   optional ROIPoolingParameter roi_pooling_param = 147;
+  optional ROIWarpingParameter roi_warping_param = 151;
   optional SigmoidParameter sigmoid_param = 124;
+  optional SmoothL1LossParameter smooth_l1_loss_param = 150;
   optional SoftmaxParameter softmax_param = 125;
   optional SPPParameter spp_param = 132;
   optional SliceParameter slice_param = 126;
@@ -667,6 +670,7 @@ message DataParameter {
 
 message DropoutParameter {
   optional float dropout_ratio = 1 [default = 0.5]; // dropout ratio
+  optional bool scale_train = 2 [default = true];  // scale train or test phase
 }
 
 // DummyDataLayer fills any number of arbitrarily shaped blobs with random
@@ -893,6 +897,11 @@ message LRNParameter {
     CUDNN = 2;
   }
   optional Engine engine = 6 [default = DEFAULT];
+}
+
+message MaskResizeParameter {
+  optional uint32 output_height = 1 [default = 0];
+  optional uint32 output_width = 2 [default = 0];
 }
 
 message MemoryDataParameter {
@@ -1141,6 +1150,13 @@ message SigmoidParameter {
   optional Engine engine = 1 [default = DEFAULT];
 }
 
+message SmoothL1LossParameter {
+  // SmoothL1Loss(x) =
+  //   0.5 * (sigma * x) ** 2    -- if x < 1.0 / sigma / sigma
+  //   |x| - 0.5 / sigma / sigma -- otherwise
+  optional float sigma = 1 [default = 1];
+}
+
 message SliceParameter {
   // The axis along which to slice -- may be negative to index from the end
   // (e.g., -1 for the last axis).
@@ -1238,6 +1254,26 @@ message SegmentationParameter {
 
 // Message that stores parameters used by ROIPoolingLayer
 message ROIPoolingParameter {
+  // Pad, kernel size, and stride are all given as a single value for equal
+  // dimensions in height and width or as Y, X pairs.
+  optional uint32 pooled_h = 1 [default = 0]; // The pooled output height
+  optional uint32 pooled_w = 2 [default = 0]; // The pooled output width
+  // Multiplicative spatial scale factor to translate ROI coords from their
+  // input scale to the scale used when pooling
+  optional float spatial_scale = 3 [default = 1];
+}
+
+message ROIWarpingTestParameter {
+  // Pad, kernel size, and stride are all given as a single value for equal
+  // dimensions in height and width or as Y, X pairs.
+  optional uint32 pooled_h = 1 [default = 0]; // The pooled output height
+  optional uint32 pooled_w = 2 [default = 0]; // The pooled output width
+  // Multiplicative spatial scale factor to translate ROI coords from their
+  // input scale to the scale used when pooling
+  optional float spatial_scale = 3 [default = 1];
+}
+
+message ROIWarpingParameter {
   // Pad, kernel size, and stride are all given as a single value for equal
   // dimensions in height and width or as Y, X pairs.
   optional uint32 pooled_h = 1 [default = 0]; // The pooled output height

@@ -6,7 +6,7 @@
 // --------------------------------------------------------
 
 
-#include "caffe/fast_rcnn_layers.hpp"
+#include "caffe/layers/mask_pooling_layer.hpp"
 
 namespace caffe {
   

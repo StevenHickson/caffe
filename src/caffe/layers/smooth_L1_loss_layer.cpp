@@ -5,7 +5,7 @@
 // Licensed under The MIT License [see LICENSE for details]
 // --------------------------------------------------------
 
-#include "caffe/fast_rcnn_layers.hpp"
+#include "caffe/layers/smooth_L1_loss_layer.hpp"
 
 namespace caffe {
 

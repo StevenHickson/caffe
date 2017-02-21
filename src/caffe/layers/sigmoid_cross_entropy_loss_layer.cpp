@@ -93,7 +93,7 @@ void SigmoidCrossEntropyLossLayer<Dtype>::Forward_cpu(
   Dtype loss = 0;
   Dtype weight_sum = 0;
   if (bottom.size() == 2) {
-    for (int i = 0; i < bottom[0]->count; ++i) {
+    for (int i = 0; i < bottom[0]->count(); ++i) {
       const int target_value = static_cast<int>(target[i]);
       if (has_ignore_label_ && target_value == ignore_label_) {
         continue;
@@ -104,7 +104,7 @@ void SigmoidCrossEntropyLossLayer<Dtype>::Forward_cpu(
     }
   } else if (bottom.size() == 3) {
     const Dtype* weights = bottom[2]->cpu_data();
-    for (int i = 0; i < bottom[0]->count; ++i) {
+    for (int i = 0; i < bottom[0]->count(); ++i) {
       /*
       Dtype tmp1 = (input_data[i] * (target[i] - (input_data >= 0));
       Dtype tmp2 = log(1 + exp(input_data[i] - 2 * input_data[i] * (input_data[i] >=0 )));
